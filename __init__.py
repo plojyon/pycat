@@ -3,12 +3,8 @@ import time  # TODO: isort, delete unused
 import borders
 import sys
 
-
-def get_terminal_size():
-    """Return a w,h tuple of the current size of the terminal."""
-    # TODO: remove -10
-    return (os.get_terminal_size().columns, os.get_terminal_size().lines)
-
+import cursor
+cursor.enable_ansi()
 
 class Window:
     TYPES = {"console": 0, "wrap": 1}
@@ -137,7 +133,7 @@ class Canvas:
 
         :param windows: An array of windows on the canvas
         """
-        self.size = get_terminal_size()
+        self.size = cursor.get_terminal_size()
         self.data = [[0 for j in range(self.size[1])] for i in range(self.size[0])]
 
         self.windows = windows
@@ -199,7 +195,7 @@ class Canvas:
 
     def redraw(self):
         """Scrap all canvas data and redraw all windows."""
-        self.size = get_terminal_size()
+        self.size = cursor.get_terminal_size()
         self.data = [[0 for j in range(self.size[1])] for i in range(self.size[0])]
         for window in self.windows:
             window.draw(self)
@@ -224,18 +220,12 @@ class Canvas:
             self.set_content(position, ch)
             position = (position[0] + 1, position[1])
 
-
-def move(x, y):
-    """Move the terminal cursor to x,y."""
-    print("\033[%d;%dH" % (y + 1, x + 1), end="")
-
-
 import random
 
 if __name__ == "__main__":
     i = 0
     j = 0
-    background = Window(size=[i - 1 for i in get_terminal_size()], style="double")
+    background = Window(size=[i - 1 for i in cursor.get_terminal_size()], style="double")
     static = Window(style="thin", size=(10, 10), position=(2, 1))
     cat = Window(style="thin", title="hello", size=(1, 4), position=(6, 9))
     canvas = Canvas([background, static, cat])
@@ -256,5 +246,5 @@ if __name__ == "__main__":
         cat.size = (1 + i, 4)
         canvas.redraw()
         canvas.print(debug=False)
-        move(0, 0)
+        cursor.move(0, 0)
         time.sleep(0.1)
