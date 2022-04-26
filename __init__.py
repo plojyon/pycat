@@ -2,22 +2,18 @@ import os
 import time  # TODO: isort, delete unused
 import sys
 
-import borders
-import cursor
+from . import borders
+from . import cursor
 
 cursor.enable_ansi()
 
 class Window:
-    TYPES = {"console": 0, "wrap": 1}
-
     def __init__(
         self,
         position=(0, 0),
         size=(10, 10),
         style="double",
-        title="",
         fill=True,
-        type="console",
         padding=None,
     ):
         """Initialize an empty window.
@@ -25,29 +21,38 @@ class Window:
         :param position: A tuple of x,y coordinates for the top left outer corner
         :param size: The outer size of a window (i.e. including borders)
         :param style: Window border style (see borders.py)
-        :param title: Text displayed on the top of the window
         :param fill: Whether the background of the window should be cleared
         """
         self.style = borders.STYLES[style]
-        self.title = ""
         self.position = position
         self.size = size
         self.fill = fill
-        self.type = self.TYPES[type]
         self.padding = padding
+        self.content = []
         if self.padding is None:
             self.padding = [1, 1, 1, 1]  # top right bottom left
-        self.static_content = []
-        self.dynamic_content = []
 
     def _translate(self, x, y):
         return (x + self.position[0], y + self.position[1])
 
-    def _translate_padding(self, x, y):
+    @property
+    def inner_position(self):
         return (
-            x + self.position[0] + self.padding[3],
-            y + self.position[1] + self.padding[0],
+            self.position[0] + self.padding[3],
+            self.position[1] + self.padding[0]
         )
+
+    @property
+    def inner_width(self):
+        return self.size[0] - self.padding[1] - self.padding[3]
+
+    @property
+    def inner_height(self):
+        return self.size[1] - self.padding[0] - self.padding[2]
+
+    @property
+    def inner_size(self):
+        return (self.inner_width(), self.inner_height())
 
     def draw_border(self, canvas):
         """Draw own border onto a given canvas."""
@@ -81,52 +86,37 @@ class Window:
                 canvas.set_border(pos_right, "left", 0)
                 canvas.set_border(pos_left, "right", 0)
 
+    def draw_fill(self, canvas, fill_ch=" "):
+        for j in range(1, self.size[1]-1):
+            for i in range(1, self.size[0]-1):
+                pos = self._translate(i, j)
+                canvas.set_content(pos, fill_ch)
+
     def draw_content(self, canvas):
-        """Draw own content (without border) onto a given canvas."""
-        # background
-        if self.fill:
-            for j in range(1, self.size[1]-1):
-                for i in range(1, self.size[0]-1):
-                    pos = self._translate(i, j)
-                    canvas.set_content(pos, " ")
-
-        # static content
-        for pos, text in self.static_content:
-            canvas.print_line(pos, text)
-
-        # dynamic content (console text)
-        height = self.size[1] - self.padding[0] - self.padding[2]
-        width = self.size[0] - self.padding[1] - self.padding[3]
-        row_start = self.position[0] + self.padding[3]
-        min_row = self.position[1] + self.padding[0]
-        pos = [row_start, min_row + height - 1]
-
-        for line in reversed(self.dynamic_content):
-            lines = []
+        """Draw own content (text only) onto a given canvas."""
+        pos = list(self.inner_position)
+        for line in self.content:
             while len(line) > 0:
-                lines.append(line[:width])
-                line = line[width:]
-
-            for l in reversed(lines):
-                canvas.print_line(pos, l)
-                pos[1] -= 1
-
-                if pos[1] < min_row:  # reached top
+                canvas.print_line(pos, line[:self.inner_width])
+                line = line[self.inner_width:]
+                pos[1] += 1
+                if pos[1] >= self.inner_height:
                     return
 
     def draw(self, canvas):
         """Draw the entire window onto a given canvas."""
         self.draw_border(canvas)
+        if self.fill:
+            self.draw_fill(canvas)
         self.draw_content(canvas)
 
-    def write(self, position, text):
-        """Write static text at position. This will overwrite dynamic content."""
-        self.static_content.append((position, text))
-
     def print(self, text):
-        """Print a line of dynamic content. This text will scroll up as new content comes in."""
-        self.dynamic_content.append(text)
+        """Set window content."""
+        self.content.append(text)
 
+    def clear(self):
+        """Remove all content."""
+        self.content = []
 
 class Canvas:
     def __init__(self, windows=None):
@@ -216,6 +206,11 @@ class Canvas:
             else:
                 sys.stdout.flush()
 
+    def draw(self):
+        cursor.move(0, 0)
+        self.redraw()
+        self.print()
+
     def print_line(self, position, text):
         for ch in text:
             self.set_content(position, ch)
@@ -228,7 +223,7 @@ if __name__ == "__main__":
     j = 0
     background = Window(size=cursor.get_terminal_size(), style="double")
     static = Window(style="thin", size=(10, 10), position=(2, 1))
-    cat = Window(style="thin", title="hello", size=(1, 4), position=(6, 9))
+    cat = Window(style="thin", size=(1, 4), position=(6, 9))
     canvas = Canvas([background, static, cat])
 
     while True:
