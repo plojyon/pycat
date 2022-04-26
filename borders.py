@@ -7,21 +7,21 @@ Access a specific border type:
 from collections import defaultdict
 
 # This value should not exceed 32/4 = 8. Bad things might happen.
-_bits_per_style = 3  # allows up to 2 ** _bits_per_style different styles
+bits_per_style = 3  # allows up to 2 ** bits_per_style different styles
 
 STYLES = {
     "empty": 0b000,
     "double": 0b001,
     "thin": 0b010,
     "thick": 0b011,
-    # "full": 0b100,
+    "full": 0b100,
     ...: ...,  # add your own styles here
 }
 SIDES = {
-    "up": 1 << 3 * _bits_per_style,
-    "right": 1 << 2 * _bits_per_style,
-    "down": 1 << 1 * _bits_per_style,
-    "left": 1 << 0 * _bits_per_style,
+    "up": 1 << 3 * bits_per_style,
+    "right": 1 << 2 * bits_per_style,
+    "down": 1 << 1 * bits_per_style,
+    "left": 1 << 0 * bits_per_style,
 }
 
 
@@ -34,13 +34,18 @@ def mask_1(length):
     return mask
 
 
+def mask_side(side):
+    """Return a mask of ones at the given side."""
+    return SIDES[side] * mask_1(bits_per_style)
+
+
 def to_str(x):
-    mask = mask_1(_bits_per_style)
+    mask = mask_1(bits_per_style)
     sides = {
-        "up": (x & (mask * SIDES["up"])) >> 3 * _bits_per_style,
-        "right": (x & (mask * SIDES["right"])) >> 2 * _bits_per_style,
-        "down": (x & (mask * SIDES["down"])) >> 1 * _bits_per_style,
-        "left": (x & (mask * SIDES["left"])) >> 0 * _bits_per_style,
+        "up": (x & (mask * SIDES["up"])) >> 3 * bits_per_style,
+        "right": (x & (mask * SIDES["right"])) >> 2 * bits_per_style,
+        "down": (x & (mask * SIDES["down"])) >> 1 * bits_per_style,
+        "left": (x & (mask * SIDES["left"])) >> 0 * bits_per_style,
     }
 
     def int_to_style(key):
@@ -65,7 +70,7 @@ r = SIDES["right"]
 D = STYLES["double"]
 t = STYLES["thin"]
 T = STYLES["thick"]
-# F = STYLES["full"]
+F = STYLES["full"]
 
 BORDERS = {
     0: " ",
@@ -109,17 +114,17 @@ BORDERS = {
     l * t + r * t + d * t: "┬",
     u * t + l * t + r * t: "┴",
     u * t + l * t + r * t + d * t: "┼",
-    # l * F + r * F: "█",
-    # u * F + d * F: "█",
-    # r * F + d * F: "█",
-    # l * F + d * F: "█",
-    # u * F + r * F: "█",
-    # u * F + l * F: "█",
-    # u * F + r * F + d * F: "█",
-    # u * F + d * F + l * F: "█",
-    # l * F + r * F + d * F: "█",
-    # u * F + l * F + r * F: "█",
-    # u * F + l * F + r * F + d * F: "█",
+    l * F + r * F: "█",
+    u * F + d * F: "█",
+    r * F + d * F: "█",
+    l * F + d * F: "█",
+    u * F + r * F: "█",
+    u * F + l * F: "█",
+    u * F + r * F + d * F: "█",
+    u * F + d * F + l * F: "█",
+    l * F + r * F + d * F: "█",
+    u * F + l * F + r * F: "█",
+    u * F + l * F + r * F + d * F: "█",
     # add your own styles here
 }
 
