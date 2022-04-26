@@ -7,6 +7,7 @@ from . import cursor
 
 cursor.enable_ansi()
 
+
 class Window:
     def __init__(
         self,
@@ -30,17 +31,14 @@ class Window:
         self.padding = padding
         self.content = []
         if self.padding is None:
-            self.padding = [1, 1, 1, 1]  # top right bottom left
+            self.padding = [1, 2, 1, 2]  # top right bottom left
 
     def _translate(self, x, y):
         return (x + self.position[0], y + self.position[1])
 
     @property
     def inner_position(self):
-        return (
-            self.position[0] + self.padding[3],
-            self.position[1] + self.padding[0]
-        )
+        return (self.position[0] + self.padding[3], self.position[1] + self.padding[0])
 
     @property
     def inner_width(self):
@@ -87,8 +85,8 @@ class Window:
                 canvas.set_border(pos_left, "right", 0)
 
     def draw_fill(self, canvas, fill_ch=" "):
-        for j in range(1, self.size[1]-1):
-            for i in range(1, self.size[0]-1):
+        for j in range(1, self.size[1] - 1):
+            for i in range(1, self.size[0] - 1):
                 pos = self._translate(i, j)
                 canvas.set_content(pos, fill_ch)
 
@@ -97,8 +95,8 @@ class Window:
         pos = list(self.inner_position)
         for line in self.content:
             while len(line) > 0:
-                canvas.print_line(pos, line[:self.inner_width])
-                line = line[self.inner_width:]
+                canvas.print_line(pos, line[: self.inner_width])
+                line = line[self.inner_width :]
                 pos[1] += 1
                 if pos[1] >= self.inner_height:
                     return
@@ -117,6 +115,7 @@ class Window:
     def clear(self):
         """Remove all content."""
         self.content = []
+
 
 class Canvas:
     def __init__(self, windows=None):
@@ -215,6 +214,7 @@ class Canvas:
         for ch in text:
             self.set_content(position, ch)
             position = (position[0] + 1, position[1])
+
 
 import random
 
