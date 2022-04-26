@@ -33,6 +33,17 @@ ENABLE_PROCESSED_OUTPUT = 0x0001
 ENABLE_WRAP_AT_EOL_OUTPUT = 0x0002
 ENABLE_VIRTUAL_TERMINAL_PROCESSING = 0x0004  # VT100 (Win 10)
 
+# colour options
+NORMAL = 0
+BOLD = 1
+UNDERLINE = 4
+BLINK = 5
+INVERT = 7
+FOREGROUND = 30
+BACKGROUND = 40
+BRIGHT = 60
+COLOURS = ["black", "red", "green", "yellow", "blue", "magenta", "cyan", "white"]
+
 
 def get_console_mode(of_stdout=True, full=False):
     if sys.platform == "win32":
@@ -110,6 +121,11 @@ def move(x, y):
 def get_terminal_size():
     """Return a w,h tuple of the current size of the terminal."""
     return (os.get_terminal_size().columns, os.get_terminal_size().lines)
+
+
+def colour(text, options):
+    options = [str(o) for o in options]
+    return "\033[" + ";".join(options) + "m" + text + "\033[0m"
 
 
 if __name__ == "__main__":

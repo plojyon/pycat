@@ -125,6 +125,8 @@ class Canvas:
         """
         self.size = cursor.get_terminal_size()
         self.data = [[0 for j in range(self.size[1])] for i in range(self.size[0])]
+        self.is_rendering = False
+        self.is_drawing = False
 
         self.windows = windows
         if self.windows is None:
@@ -190,25 +192,40 @@ class Canvas:
         for window in self.windows:
             window.draw(self)
 
-    def print(self, debug=False):
-        """Print the current canvas onto the terminal as-is, even if terminal resized."""
+    def render(self):
+        """Render current canvas data into a buffer for printing."""
+        while self.is_rendering:
+            time.sleep(0.1)
+        self.is_rendering = True
+
+        self.buffer = ""
         for j in range(self.size[1]):
             for i in range(self.size[0]):
                 px = self.data[i][j]
                 if isinstance(px, int):  # px is a border type
-                    print(borders.get(px, debug), end="")
+                    self.buffer += borders.get(px)
                 else:  # px is a content character
-                    print(px, end="")
+                    self.buffer += px
             # last newline
             if j != self.size[1] - 1:
-                print()
-            else:
-                sys.stdout.flush()
+                self.buffer += "\n"
+
+        self.is_rendering = False
+
+    def print(self):
+        """Print the current canvas buffer onto the terminal."""
+        print(self.buffer, end="")
+        sys.stdout.flush()
 
     def draw(self):
+        while self.is_drawing:
+            time.sleep(0.1)
+        self.is_drawing = True
         cursor.move(0, 0)
         self.redraw()
+        self.render()
         self.print()
+        self.is_drawing = False
 
     def print_line(self, position, text):
         for ch in text:
