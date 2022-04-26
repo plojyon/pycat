@@ -1,9 +1,10 @@
 import os
 import time  # TODO: isort, delete unused
-import borders
 import sys
 
+import borders
 import cursor
+
 cursor.enable_ansi()
 
 class Window:
@@ -51,32 +52,32 @@ class Window:
     def draw_border(self, canvas):
         """Draw own border onto a given canvas."""
         # top, bottom
-        for i in range(self.size[0] + 1):
+        for i in range(self.size[0]):
             pos_up = self._translate(i, 0)
-            pos_down = self._translate(i, self.size[1])
+            pos_down = self._translate(i, self.size[1] - 1)
             if i != 0:
                 canvas.set_border(pos_up, "left", self.style)
                 canvas.set_border(pos_down, "left", self.style)
-            if i != self.size[0]:
+            if i != self.size[0] - 1:
                 canvas.set_border(pos_up, "right", self.style)
                 canvas.set_border(pos_down, "right", self.style)
             # clear inner borders
-            if self.fill and i != 0 and i != self.size[0]:
+            if self.fill and i != 0 and i != self.size[0] - 1:
                 canvas.set_border(pos_up, "down", 0)
                 canvas.set_border(pos_down, "up", 0)
 
         # left, right
-        for j in range(self.size[1] + 1):
+        for j in range(self.size[1]):
             pos_left = self._translate(0, j)
-            pos_right = self._translate(self.size[0], j)
+            pos_right = self._translate(self.size[0] - 1, j)
             if j != 0:
                 canvas.set_border(pos_left, "up", self.style)
                 canvas.set_border(pos_right, "up", self.style)
-            if j != self.size[1]:
+            if j != self.size[1] - 1:
                 canvas.set_border(pos_left, "down", self.style)
                 canvas.set_border(pos_right, "down", self.style)
             # clear inner borders
-            if self.fill and j != 0 and j != self.size[1]:
+            if self.fill and j != 0 and j != self.size[1] - 1:
                 canvas.set_border(pos_right, "left", 0)
                 canvas.set_border(pos_left, "right", 0)
 
@@ -84,8 +85,8 @@ class Window:
         """Draw own content (without border) onto a given canvas."""
         # background
         if self.fill:
-            for j in range(1, self.size[1]):
-                for i in range(1, self.size[0]):
+            for j in range(1, self.size[1]-1):
+                for i in range(1, self.size[0]-1):
                     pos = self._translate(i, j)
                     canvas.set_content(pos, " ")
 
@@ -98,7 +99,7 @@ class Window:
         width = self.size[0] - self.padding[1] - self.padding[3]
         row_start = self.position[0] + self.padding[3]
         min_row = self.position[1] + self.padding[0]
-        pos = [row_start, min_row + height]
+        pos = [row_start, min_row + height - 1]
 
         for line in reversed(self.dynamic_content):
             lines = []
@@ -225,7 +226,7 @@ import random
 if __name__ == "__main__":
     i = 0
     j = 0
-    background = Window(size=[i - 1 for i in cursor.get_terminal_size()], style="double")
+    background = Window(size=cursor.get_terminal_size(), style="double")
     static = Window(style="thin", size=(10, 10), position=(2, 1))
     cat = Window(style="thin", title="hello", size=(1, 4), position=(6, 9))
     canvas = Canvas([background, static, cat])
