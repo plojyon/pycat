@@ -11,8 +11,17 @@ def get_terminal_size():
 
 
 class Window:
+    TYPES = {"console": 0, "wrap": 1}
+
     def __init__(
-        self, position=(0, 0), size=(10, 10), style="double", title="", fill=True
+        self,
+        position=(0, 0),
+        size=(10, 10),
+        style="double",
+        title="",
+        fill=True,
+        type="console",
+        padding=None,
     ):
         """Initialize an empty window.
 
@@ -27,9 +36,21 @@ class Window:
         self.position = position
         self.size = size
         self.fill = fill
+        self.type = self.TYPES[type]
+        self.padding = padding
+        if self.padding is None:
+            self.padding = [1, 1, 1, 1]  # top right bottom left
+        self.static_content = []
+        self.dynamic_content = []
 
     def _translate(self, x, y):
         return (x + self.position[0], y + self.position[1])
+
+    def _translate_padding(self, x, y):
+        return (
+            x + self.position[0] + self.padding[3],
+            y + self.position[1] + self.padding[0],
+        )
 
     def draw_border(self, canvas):
         """Draw own border onto a given canvas."""
@@ -64,11 +85,50 @@ class Window:
                 canvas.set_border(pos_left, "right", 0)
 
     def draw_content(self, canvas):
+        """Draw own content (without border) onto a given canvas."""
+        # background
         if self.fill:
             for j in range(1, self.size[1]):
                 for i in range(1, self.size[0]):
                     pos = self._translate(i, j)
-                    canvas.set_content(pos, self.fill_ch)
+                    canvas.set_content(pos, " ")
+
+        # static content
+        for pos, text in self.static_content:
+            canvas.print_line(pos, text)
+
+        # dynamic content (console text)
+        height = self.size[1] - self.padding[0] - self.padding[2]
+        width = self.size[0] - self.padding[1] - self.padding[3]
+        row_start = self.position[0] + self.padding[3]
+        min_row = self.position[1] + self.padding[0]
+        pos = [row_start, min_row + height]
+
+        for line in reversed(self.dynamic_content):
+            lines = []
+            while len(line) > 0:
+                lines.append(line[:width])
+                line = line[width:]
+
+            for l in reversed(lines):
+                canvas.print_line(pos, l)
+                pos[1] -= 1
+
+                if pos[1] < min_row:  # reached top
+                    return
+
+    def draw(self, canvas):
+        """Draw the entire window onto a given canvas."""
+        self.draw_border(canvas)
+        self.draw_content(canvas)
+
+    def write(self, position, text):
+        """Write static text at position. This will overwrite dynamic content."""
+        self.static_content.append((position, text))
+
+    def print(self, text):
+        """Print a line of dynamic content. This text will scroll up as new content comes in."""
+        self.dynamic_content.append(text)
 
 
 class Canvas:
@@ -142,8 +202,7 @@ class Canvas:
         self.size = get_terminal_size()
         self.data = [[0 for j in range(self.size[1])] for i in range(self.size[0])]
         for window in self.windows:
-            window.draw_border(self)
-            window.draw_content(self)
+            window.draw(self)
 
     def print(self, debug=False):
         """Print the current canvas onto the terminal as-is, even if terminal resized."""
@@ -160,6 +219,11 @@ class Canvas:
             else:
                 sys.stdout.flush()
 
+    def print_line(self, position, text):
+        for ch in text:
+            self.set_content(position, ch)
+            position = (position[0] + 1, position[1])
+
 
 def move(x, y):
     """Move the terminal cursor to x,y."""
@@ -171,6 +235,11 @@ import random
 if __name__ == "__main__":
     i = 0
     j = 0
+    background = Window(size=[i - 1 for i in get_terminal_size()], style="double")
+    static = Window(style="thin", size=(10, 10), position=(2, 1))
+    cat = Window(style="thin", title="hello", size=(1, 4), position=(6, 9))
+    canvas = Canvas([background, static, cat])
+
     while True:
         i %= 10
         i += 1
@@ -181,17 +250,10 @@ if __name__ == "__main__":
             * random.randint(0, 1)
             * random.randint(0, 1)
         )
-        background = Window(size=[i - 1 for i in get_terminal_size()], style="double")
-        static = Window(style="thin", size=(10, 10), position=(2 + j, 1))
-        cat = Window(
-            style="thin", title="hello", size=(1 + i, 4), position=(6 + j, 9 + j)
-        )
-
-        background.fill_ch = "x"
-        static.fill_ch = "s"
-        cat.fill_ch = "c"
-
-        canvas = Canvas([background, static, cat])
+        static.print(f"Welcome to Iteration {i},{j}")
+        static.size = (10 + j, 10)
+        cat.position = (6 + j, 9 + j)
+        cat.size = (1 + i, 4)
         canvas.redraw()
         canvas.print(debug=False)
         move(0, 0)
