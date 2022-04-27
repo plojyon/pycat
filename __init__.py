@@ -206,7 +206,7 @@ class Canvas:
                     self.buffer += borders.get(px)
                 else:  # px is a content character
                     self.buffer += px
-            # last newline
+            # end the line, unless it's the last line
             if j != self.size[1] - 1:
                 self.buffer += "\n"
 
@@ -221,10 +221,12 @@ class Canvas:
         while self.is_drawing:
             time.sleep(0.1)
         self.is_drawing = True
-        cursor.move(0, 0)
         self.redraw()
         self.render()
+        print("\x1B7", end='') # save cursor position
+        cursor.move(0, 0)
         self.print()
+        print("\x1B8", end='', flush=True) # restore cursor position
         self.is_drawing = False
 
     def print_line(self, position, text):
