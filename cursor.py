@@ -102,9 +102,12 @@ def get_cursor_pos():
     return pos
 
 
-def move(x, y):
+def move(x, y, now=True):
     """Move the terminal cursor to x,y."""
-    print("\033[%d;%dH" % (y + 1, x + 1), end="")
+    seq = "\033[%d;%dH" % (y + 1, x + 1)
+    if now:
+        print(seq, end="")
+    return seq
 
 
 def get_terminal_size():

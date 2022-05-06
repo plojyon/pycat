@@ -47,7 +47,7 @@ class SegmentIterator:
 
     def __next__(self):
         try:
-            char = self.segment.get_text(self.i)
+            char = self.segment.text[self.i]
             self.i += 1
             return Colour(char, self.segment.clone().style)
         except:
@@ -144,19 +144,23 @@ class Colour:
         return "".join([str(seg) for seg in self.segments])
 
     def add(self, first, second):
-        # TODO:
         ret = Colour(first)
-        ret.segments += Colour(second).segments
+        if not isinstance(second, Colour):
+            second = Colour(second)
+        ret.segments += second.segments.copy()
         return ret
 
-    def __add__(self, other):
-        return self.add(self, other)
+    def __add__(self, second):
+        return self.add(self, second)
 
-    def __radd__(self, other):
-        return self.add(other, self)
+    def __radd__(self, second):
+        return self.add(second, self)
 
-    def __iadd__(self, other):
-        return self.add(self, other)
+    def __iadd__(self, second):
+        if not isinstance(second, Colour):
+            second = Colour(second)
+        self.segments += second.segments
+        return self
 
     def __len__(self):
         return sum([len(seg) for seg in self.segments])
@@ -165,7 +169,7 @@ class Colour:
         return ColourIterator(self)
 
     def __getitem__(self, key):
-        return list(self)[key]
+        return [ch for ch in self][key]
         # if isinstance(key, slice):
         #     return [self.__getitem__(i) for i in slice]
         # else:

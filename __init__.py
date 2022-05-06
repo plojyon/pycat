@@ -50,10 +50,10 @@ class Window:
 
     @property
     def inner_size(self):
-        return (self.inner_width(), self.inner_height())
+        return (self.inner_width, self.inner_height)
 
-    def draw_border(self, canvas):
-        """Draw own border onto a given canvas."""
+    def render_border(self, canvas):
+        """Render own border onto a given canvas."""
         # top, bottom
         for i in range(self.size[0]):
             pos_up = self._translate(i, 0)
@@ -84,14 +84,14 @@ class Window:
                 canvas.set_border(pos_right, "left", 0)
                 canvas.set_border(pos_left, "right", 0)
 
-    def draw_fill(self, canvas, fill_ch=" "):
+    def render_fill(self, canvas, fill_ch=" "):
         for j in range(1, self.size[1] - 1):
             for i in range(1, self.size[0] - 1):
                 pos = self._translate(i, j)
                 canvas.set_content(pos, fill_ch)
 
-    def draw_content(self, canvas):
-        """Draw own content (text only) onto a given canvas."""
+    def render_content(self, canvas):
+        """Render own content (text only) onto a given canvas."""
         pos = list(self.inner_position)
         for line in self.content:
             while len(line) > 0:
@@ -101,12 +101,12 @@ class Window:
                 if pos[1] >= self.inner_height:
                     return
 
-    def draw(self, canvas):
-        """Draw the entire window onto a given canvas."""
-        self.draw_border(canvas)
+    def render(self, canvas):
+        """Render the entire window onto a given canvas."""
+        self.render_border(canvas)
         if self.fill:
-            self.draw_fill(canvas)
-        self.draw_content(canvas)
+            self.render_fill(canvas)
+        self.render_content(canvas)
 
     def print(self, text):
         """Set window content."""
@@ -125,8 +125,9 @@ class Canvas:
         """
         self.size = cursor.get_terminal_size()
         self.data = [[0 for j in range(self.size[1])] for i in range(self.size[0])]
-        self.is_rendering = False
-        self.is_drawing = False
+        self.is_printing = False
+        self.is_refreshing = False
+        self.debug_mode = False
 
         self.windows = windows
         if self.windows is None:
@@ -185,49 +186,62 @@ class Canvas:
         if window in self.windows:
             self.windows.remove(window)
 
-    def redraw(self):
-        """Scrap all canvas data and redraw all windows."""
-        self.size = cursor.get_terminal_size()
-        self.data = [[0 for j in range(self.size[1])] for i in range(self.size[0])]
-        for window in self.windows:
-            window.draw(self)
+    def get_window_bounds(self, window=None):
+        if window is None:
+            x, y = (0, 0)
+            width, height = self.size
+        else:
+            x, y = window.position
+            width, height = window.size
+        return ((x, y), (width, height))
 
-    def render(self):
-        """Render current canvas data into a buffer for printing."""
-        while self.is_rendering:
+    def render(self, window=None):
+        """Scrap canvas data and re-render."""
+        self.size = cursor.get_terminal_size()
+        (x, y), (width, height) = self.get_window_bounds(window)
+        for j in range(y, height):
+            for i in range(x, width):
+                if isinstance(self.data, str):
+                    self.data[i][j] = 0
+        for w in (self.windows if window is None else [window]):
+            w.render(self)
+
+    def print(self, window=None):
+        """Print the current canvas onto the terminal."""
+        while self.is_printing:
             time.sleep(0.1)
-        self.is_rendering = True
+        self.is_printing = True
+
+        start_pos, (width, height) = self.get_window_bounds(window)
 
         self.buffer = ""
-        for j in range(self.size[1]):
-            for i in range(self.size[0]):
+        if not self.debug_mode:
+            self.buffer = cursor.move(*start_pos, now=False)
+
+        for j in range(start_pos[1], height):
+            for i in range(start_pos[0], width):
                 px = self.data[i][j]
                 if isinstance(px, int):  # px is a border type
                     self.buffer += borders.get(px)
                 else:  # px is a content character
                     self.buffer += px
-            # end the line, unless it's the last line
+            # move to a new line, unless it's the last line
             if j != self.size[1] - 1:
-                self.buffer += "\n"
-
-        self.is_rendering = False
-
-    def print(self):
-        """Print the current canvas buffer onto the terminal."""
+                self.buffer += cursor.move(start_pos[0], j+1, now=False)  # "\n"
         print(self.buffer, end="")
         sys.stdout.flush()
+        self.is_printing = False
 
-    def draw(self):
-        while self.is_drawing:
+    def refresh(self, window=None):
+        """Render self and print to (0, 0)."""
+        while self.is_refreshing:
             time.sleep(0.1)
-        self.is_drawing = True
-        self.redraw()
-        self.render()
-        print("\x1B7", end='') # save cursor position
-        cursor.move(0, 0)
-        self.print()
-        print("\x1B8", end='', flush=True) # restore cursor position
-        self.is_drawing = False
+        self.is_refreshing = True
+        self.render(window)
+        print("\x1B7", end='')  # save cursor position
+        self.print(window)
+        print("\x1B8", end='', flush=True)  # restore cursor position
+        self.is_refreshing = False
 
     def print_line(self, position, text):
         for ch in text:
@@ -235,9 +249,8 @@ class Canvas:
             position = (position[0] + 1, position[1])
 
 
-import random
-
 if __name__ == "__main__":
+    import random
     i = 0
     j = 0
     background = Window(size=cursor.get_terminal_size(), style="double")
@@ -259,7 +272,7 @@ if __name__ == "__main__":
         static.size = (10 + j, 10)
         cat.position = (6 + j, 9 + j)
         cat.size = (1 + i, 4)
-        canvas.redraw()
+        canvas.render()
         canvas.print(debug=False)
         cursor.move(0, 0)
         time.sleep(0.1)
