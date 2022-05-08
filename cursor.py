@@ -9,12 +9,12 @@ try:
 except:
     pass
 """
-import sys
-import re
 import os
+import re
+import sys
 
 if sys.platform == "win32":
-    from ctypes import windll, wintypes, byref
+    from ctypes import byref, windll, wintypes
 else:
     import termios
 

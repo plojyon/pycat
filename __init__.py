@@ -1,9 +1,8 @@
 import os
-import time  # TODO: isort, delete unused
 import sys
+import time
 
-from . import borders
-from . import cursor
+from . import borders, cursor
 
 cursor.enable_ansi()
 
@@ -203,7 +202,7 @@ class Canvas:
             for i in range(x, width):
                 if isinstance(self.data, str):
                     self.data[i][j] = 0
-        for w in (self.windows if window is None else [window]):
+        for w in self.windows if window is None else [window]:
             w.render(self)
 
     def print(self, window=None):
@@ -227,7 +226,7 @@ class Canvas:
                     self.buffer += px
             # move to a new line, unless it's the last line
             if j != self.size[1] - 1:
-                self.buffer += cursor.move(start_pos[0], j+1, now=False)  # "\n"
+                self.buffer += cursor.move(start_pos[0], j + 1, now=False)  # "\n"
         print(self.buffer, end="")
         sys.stdout.flush()
         self.is_printing = False
@@ -238,9 +237,9 @@ class Canvas:
             time.sleep(0.1)
         self.is_refreshing = True
         self.render(window)
-        print("\x1B7", end='')  # save cursor position
+        print("\x1B7", end="")  # save cursor position
         self.print(window)
-        print("\x1B8", end='', flush=True)  # restore cursor position
+        print("\x1B8", end="", flush=True)  # restore cursor position
         self.is_refreshing = False
 
     def print_line(self, position, text):
@@ -251,6 +250,7 @@ class Canvas:
 
 if __name__ == "__main__":
     import random
+
     i = 0
     j = 0
     background = Window(size=cursor.get_terminal_size(), style="double")
