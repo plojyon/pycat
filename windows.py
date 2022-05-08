@@ -9,7 +9,8 @@ class ConsoleWindow(Window):
         self.reversed = kwargs.pop("reversed", True)
         self.content = []
 
-    def draw_content(self, canvas):
+    def render_content(self, canvas):
+        """Render own content (text only) onto a given canvas."""
         inner_x, inner_y = self.inner_position
 
         if self.reversed:
@@ -45,7 +46,7 @@ class ListWindow(Window):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-    def draw_content(self, canvas):
-        """Draw own content (text only) onto a given canvas."""
+    def render_content(self, canvas):
+        """Render own content (text only) onto a given canvas."""
         self.content.sort()
-        super().draw_content(canvas)
+        super().render_content(canvas)
